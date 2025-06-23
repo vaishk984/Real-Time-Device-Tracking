@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: realtime-tracker
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node app.js
+    branch: main
+    region: oregon
+    rootDir: .
