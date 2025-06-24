@@ -85,41 +85,40 @@ const paths = {};
 
 // Receive Location
 
-socket.on("receive-location", (data) => {
-  const { id, name, latitude, longitude } = data;
+socket.on("receive-locations", (locations) => {
+  // Clear all existing markers and trails first
+  Object.values(markers).forEach((m) => map.removeLayer(m));
+  Object.values(trails).forEach((t) => map.removeLayer(t));
 
-  console.log("Received location from:", name, { latitude, longitude });
+  // Reset
+  for (const key in markers) delete markers[key];
+  for (const key in trails) delete trails[key];
+  for (const key in paths) delete paths[key];
 
-  if (markers[id]) {
-    markers[id].setLatLng([latitude, longitude]);
-  } else {
+  locations.forEach((data) => {
+    const { id, name, latitude, longitude } = data;
+
     markers[id] = L.marker([latitude, longitude])
       .addTo(map)
       .bindPopup(
         `<strong>User:</strong> ${name}<br/>
          <strong>Lat:</strong> ${latitude.toFixed(5)}<br/>
          <strong>Lng:</strong> ${longitude.toFixed(5)}`
-      )
-      .openPopup();
-  }
+      );
 
-  if (!paths[id]) paths[id] = [];
-  paths[id].push([latitude, longitude]);
-  if (paths[id].length > 50) paths[id].shift();
+    paths[id] = [[latitude, longitude]];
 
-  if (trails[id]) {
-    trails[id].setLatLngs(paths[id]);
-  } else {
     trails[id] = L.polyline(paths[id], {
       color: "blue",
       weight: 3,
       opacity: 0.7,
     }).addTo(map);
-  }
 
-  if (id === socket.id) {
-    map.setView([latitude, longitude], 16);
-  }
+    // Focus map on your own location
+    if (id === socket.id) {
+      map.setView([latitude, longitude], 16);
+    }
+  });
 
   map.invalidateSize();
 });

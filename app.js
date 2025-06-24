@@ -16,6 +16,8 @@ const Location = require("./models/Locations");
 
 const PORT = process.env.PORT || 3000;
 
+const liveLocations = new Map();
+
 let activeUsers = 0;
 
 function ensureAuth(req, res, next) {
@@ -109,10 +111,7 @@ io.on("connection", (socket) => {
   const session = socket.request.session;
   const user = session?.passport?.user;
 
-  console.log(
-    "New socket connection. User:",
-    user?.displayName || "Unknown"
-  );
+  console.log("New socket connection. User:", user?.displayName || "Unknown");
 
   if (user) userMap.set(socket.id, user);
 
@@ -135,13 +134,17 @@ io.on("connection", (socket) => {
 
     await location.save();
 
-    io.emit("receive-location", {
+    // Update in-memory map
+    liveLocations.set(user.emails[0].value, {
       id: socket.id,
       name: user.displayName,
       email: user.emails[0].value,
       latitude: data.latitude,
       longitude: data.longitude,
     });
+
+    // Emit all active user locations
+    io.emit("receive-locations", Array.from(liveLocations.values()));
 
     const total = await Location.countDocuments();
     io.emit("location-count", total);
@@ -151,16 +154,20 @@ io.on("connection", (socket) => {
     const user = userMap.get(socket.id);
     if (user) {
       console.log("User disconnected:", user.displayName);
+
+      // Remove from user and location maps
       userMap.delete(socket.id);
+      liveLocations.delete(user.emails[0].value);
+
+      // Emit updated list of live locations
+      io.emit("receive-locations", Array.from(liveLocations.values()));
     }
 
     activeUsers = Math.max(activeUsers - 1, 0);
     io.emit("active-users", activeUsers);
-    io.emit("user-disconnected", socket.id); 
+    io.emit("user-disconnected", socket.id);
   });
 });
-
-
 
 // Start server
 server.listen(PORT, () =>
