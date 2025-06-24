@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Live Dashboard</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+      }
+      th,
+      td {
+        padding: 10px;
+        border: 1px solid #ccc;
+        text-align: center;
+      }
+      th {
+        background-color: #f5f5f5;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>🛰️ Connected Devices - Live Location</h2>
+    <h2>Welcome, <%= user.displayName %>!</h2>
+    <table id="userTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Latitude</th>
+          <th>Longitude</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Filled dynamically -->
+      </tbody>
+    </table>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const userTable = document.querySelector("#userTable tbody");
+      const users = {};
+
+      // NEW: Send location from dashboard too
+      if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            socket.emit("send-location", { latitude, longitude });
+          },
+          (error) => {
+            console.error("Geolocation error:", error);
+          },
+          {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 5000,
+          }
+        );
+      }
+
+      socket.on("receive-location", (data) => {
+        const { id, latitude, longitude, name, email } = data;
+        users[id] = { name, email, latitude, longitude };
+        renderTable();
+      });
+
+      socket.on("user-disconnected", (id) => {
+        if (markers[id]) {
+          map.removeLayer(markers[id]);
+          delete markers[id];
+        }
+
+        if (trails[id]) {
+          map.removeLayer(trails[id]);
+          delete trails[id];
+        }
+
+        delete paths[id];
+      });
+
+      function renderTable() {
+        userTable.innerHTML = "";
+        Object.values(users).forEach((user) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+        <td>${user.name}</td>
+        <td>${user.email}</td>
+        <td>${user.latitude}</td>
+        <td>${user.longitude}</td>
+      `;
+          userTable.appendChild(row);
+        });
+      }
+    </script>
+  </body>
+</html>

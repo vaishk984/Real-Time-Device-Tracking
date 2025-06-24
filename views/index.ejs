@@ -2,8 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <title>Real-time Device Tracking</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Real-time Device-Tracking App</title>
     <link rel="stylesheet" href="/css/styles.css" />
     <link
       rel="stylesheet"
@@ -12,9 +12,69 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     />
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+      }
+
+      #map {
+        height: 90vh;
+        width: 100%;
+      }
+
+      .auth-header {
+        padding: 10px;
+        text-align: center;
+        background-color: #f9f9f9;
+        border-bottom: 1px solid #ddd;
+      }
+
+      .stats {
+        text-align: center;
+        padding: 8px;
+        font-size: 0.95rem;
+        background: #f0f0f0;
+        color: #333;
+      }
+
+      a {
+        text-decoration: none;
+        color: #007bff;
+      }
+    </style>
   </head>
   <body>
+    <!-- Add in your HTML -->
+    <input id="deviceNameInput" placeholder="Enter device name" />
+    <button id="registerBtn">Register Device</button>
+
+    <% if (user) { %>
+    <div class="auth-header">
+      👋 Welcome, <%= user.displayName %> | <a href="/logout">Logout</a>
+    </div>
+    <div class="stats">
+      <span id="activeUsers">Active users: 0</span> |
+      <span id="totalLocations">Total updates: 0</span>
+    </div>
+
     <div id="map"></div>
+
+    <div style="padding: 10px; text-align: center">
+      <input
+        id="deviceNameInput"
+        placeholder="Enter device name"
+        style="padding: 6px; width: 200px; margin-right: 8px"
+      />
+      <button id="registerBtn" style="padding: 6px 12px">
+        Register Device
+      </button>
+    </div>
+    <% } else { %>
+    <div class="auth-header">
+      <p><a href="/auth/google">Login with Google</a> to start tracking.</p>
+    </div>
+    <% } %>
 
     <script
       src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"
@@ -22,7 +82,17 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     ></script>
-    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
+    <script
+      src="https://cdn.socket.io/4.8.1/socket.io.min.js"
+      integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+"
+      crossorigin="anonymous"
+    ></script>
+
+    <% if (user) { %>
+    <script>
+      const USER_AUTHENTICATED = true;
+    </script>
     <script src="/js/script.js"></script>
+    <% } %>
   </body>
 </html>
