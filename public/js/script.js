@@ -8,7 +8,7 @@ if (typeof USER_AUTHENTICATED !== "undefined" && USER_AUTHENTICATED) {
   if (navigator.geolocation) {
     let lastLat = null;
     let lastLng = null;
-    const EPSILON = 0.00001;
+    const EPSILON = 0.0001;
 
     const isDifferent = (lat1, lng1, lat2, lng2) =>
       Math.abs(lat1 - lat2) > EPSILON || Math.abs(lng1 - lng2) > EPSILON;
@@ -35,7 +35,7 @@ if (typeof USER_AUTHENTICATED !== "undefined" && USER_AUTHENTICATED) {
           lastLat === null ||
           isDifferent(latitude, longitude, lastLat, lastLng)
         ) {
-          console.log("📡 Sending location:", {
+          console.log("Sending location:", {
             latitude,
             longitude,
             accuracy,
