@@ -14,6 +14,13 @@ require("dotenv").config();
 require("./passport");
 const Location = require("./models/Locations");
 
+let activeUsers = 0;
+
+function ensureAuth(req, res, next) {
+  if (req.isAuthenticated()) return next();
+  res.redirect("/");
+}
+
 // Connect MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
@@ -67,6 +74,20 @@ app.get("/dashboard", ensureAuth, (req, res) => {
   res.render("dashboard", { user: req.user });
 });
 
+// Location history API (JSON)
+app.get("/api/location-history", ensureAuth, async (req, res) => {
+  try {
+    const email = req.user.emails[0].value; // assuming Google profile
+    const data = await Location.find({ email })
+      .sort({ timestamp: -1 })
+      .limit(100);
+    res.json(data);
+  } catch (err) {
+    console.error("Error fetching history:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 // Location history
 app.get("/history", async (req, res) => {
   const locations = await Location.find().sort({ timestamp: -1 }).limit(100);
@@ -82,6 +103,7 @@ io.use(wrap(sessionMiddleware));
 const userMap = new Map();
 
 io.on("connection", (socket) => {
+  activeUsers++;
   const session = socket.request.session;
   const user = session?.passport?.user;
 
@@ -92,12 +114,13 @@ io.on("connection", (socket) => {
 
   if (user) userMap.set(socket.id, user);
 
+  io.emit("active-users", activeUsers); // ✅ Emit on new connect
+
   socket.on("send-location", async (data) => {
     const user = userMap.get(socket.id);
-
     if (!user) {
-      console.warn(" Unauthorized attempt to send location");
-      return; // Don't allow unauthenticated users
+      console.warn("Unauthorized location attempt");
+      return;
     }
 
     const location = new Location({
@@ -119,26 +142,16 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("user-disconnected", (id) => {
-    if (markers[id]) {
-      map.removeLayer(markers[id]);
-      delete markers[id];
-    }
-    if (trails[id]) {
-      map.removeLayer(trails[id]);
-      delete trails[id];
-    }
-    delete paths[id];
-  });
-
   socket.on("disconnect", () => {
     const user = userMap.get(socket.id);
     if (user) {
-      io.emit("user-disconnected", socket.id);
+      console.log("User disconnected:", user.displayName);
       userMap.delete(socket.id);
     }
 
-    io.emit("user-disconnected", socket.id);
+    activeUsers = Math.max(activeUsers - 1, 0);
+    io.emit("active-users", activeUsers);
+    io.emit("user-disconnected", socket.id); // Let client clean up markers/trails
   });
 });
 

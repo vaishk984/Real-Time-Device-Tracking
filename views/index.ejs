@@ -45,17 +45,24 @@
     </style>
   </head>
   <body>
-    <!-- Add in your HTML -->
-    <input id="deviceNameInput" placeholder="Enter device name" />
-    <button id="registerBtn">Register Device</button>
-
     <% if (user) { %>
     <div class="auth-header">
-      👋 Welcome, <%= user.displayName %> | <a href="/logout">Logout</a>
+      👋 Welcome, <%= user.displayName %> |
+      <a href="/dashboard">Dashboard</a> | <a href="/history">History</a> |
+      <a href="/logout">Logout</a>
     </div>
     <div class="stats">
       <span id="activeUsers">Active users: 0</span> |
       <span id="totalLocations">Total updates: 0</span>
+      <span id="lastUpdated">Last updated: N/A</span>
+      </div>
+    </div>
+
+    <div
+      id="locationWarning"
+      style="display: none; text-align: center; color: red; margin-top: 10px"
+    >
+      Your location appears inaccurate or unavailable. Please ensure GPS is on and location permissions are enabled.
     </div>
 
     <div id="map"></div>

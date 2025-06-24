@@ -2,102 +2,73 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Live Dashboard</title>
+    <title>📊 Dashboard - Real-Time Tracker</title>
+    <link rel="stylesheet" href="/css/styles.css" />
     <style>
-      body {
-        font-family: sans-serif;
-        padding: 20px;
-      }
       table {
-        width: 100%;
         border-collapse: collapse;
-        margin-top: 1rem;
+        width: 100%;
+        margin-top: 20px;
       }
-      th,
-      td {
+
+      th, td {
         padding: 10px;
         border: 1px solid #ccc;
         text-align: center;
       }
+
       th {
-        background-color: #f5f5f5;
+        background-color: #f2f2f2;
+      }
+
+      .header {
+        text-align: center;
+        margin-top: 20px;
       }
     </style>
   </head>
   <body>
-    <h2>🛰️ Connected Devices - Live Location</h2>
-    <h2>Welcome, <%= user.displayName %>!</h2>
-    <table id="userTable">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Latitude</th>
-          <th>Longitude</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Filled dynamically -->
-      </tbody>
-    </table>
+    <div class="header">
+      <h2>👋 Hello, <%= user.displayName %></h2>
+      <p><a href="/">🏠 Back to Map</a> | <a href="/logout">Logout</a></p>
+    </div>
 
-    <script src="/socket.io/socket.io.js"></script>
+    <div id="locationTableContainer">
+      <h3 style="text-align:center">📍 Recent Location History</h3>
+      <table id="locationTable">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Data will be filled via JS -->
+        </tbody>
+      </table>
+    </div>
+
     <script>
-      const socket = io();
-      const userTable = document.querySelector("#userTable tbody");
-      const users = {};
+      async function loadLocationHistory() {
+        const res = await fetch("/api/location-history");
+        const data = await res.json();
 
-      // NEW: Send location from dashboard too
-      if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
-            socket.emit("send-location", { latitude, longitude });
-          },
-          (error) => {
-            console.error("Geolocation error:", error);
-          },
-          {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 5000,
-          }
-        );
-      }
+        const tbody = document.querySelector("#locationTable tbody");
+        tbody.innerHTML = "";
 
-      socket.on("receive-location", (data) => {
-        const { id, latitude, longitude, name, email } = data;
-        users[id] = { name, email, latitude, longitude };
-        renderTable();
-      });
-
-      socket.on("user-disconnected", (id) => {
-        if (markers[id]) {
-          map.removeLayer(markers[id]);
-          delete markers[id];
-        }
-
-        if (trails[id]) {
-          map.removeLayer(trails[id]);
-          delete trails[id];
-        }
-
-        delete paths[id];
-      });
-
-      function renderTable() {
-        userTable.innerHTML = "";
-        Object.values(users).forEach((user) => {
+        data.forEach(loc => {
           const row = document.createElement("tr");
           row.innerHTML = `
-        <td>${user.name}</td>
-        <td>${user.email}</td>
-        <td>${user.latitude}</td>
-        <td>${user.longitude}</td>
-      `;
-          userTable.appendChild(row);
+            <td>${new Date(loc.timestamp).toLocaleString()}</td>
+            <td>${loc.latitude.toFixed(6)}</td>
+            <td>${loc.longitude.toFixed(6)}</td>
+          `;
+          tbody.appendChild(row);
         });
       }
+
+      loadLocationHistory();
     </script>
   </body>
 </html>

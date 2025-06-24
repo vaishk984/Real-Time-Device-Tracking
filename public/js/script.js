@@ -1,6 +1,7 @@
 const socket = io();
-
-// Prompt for device name (optional)
+const activeUsersEl = document.getElementById("activeUsers");
+const locationCountEl = document.getElementById("locationCount");
+let locationCount = 0;
 
 // User Auth Check (passed from EJS)
 if (typeof USER_AUTHENTICATED !== "undefined" && USER_AUTHENTICATED) {
@@ -16,17 +17,20 @@ if (typeof USER_AUTHENTICATED !== "undefined" && USER_AUTHENTICATED) {
       (position) => {
         const { latitude, longitude, accuracy, timestamp } = position.coords;
 
-        // Ignore very inaccurate results (>100 meters)
         if (accuracy > 100) {
           console.warn(
             "⚠️ Ignoring inaccurate position. Accuracy:",
             accuracy,
             "m"
           );
+          const warningEl = document.getElementById("locationWarning");
+          if (warningEl) warningEl.style.display = "block";
           return;
         }
 
-        // Ignore duplicate or nearly-identical readings
+        const warningEl = document.getElementById("locationWarning");
+        if (warningEl) warningEl.style.display = "none";
+
         if (
           lastLat === null ||
           isDifferent(latitude, longitude, lastLat, lastLng)
@@ -42,6 +46,12 @@ if (typeof USER_AUTHENTICATED !== "undefined" && USER_AUTHENTICATED) {
 
           lastLat = latitude;
           lastLng = longitude;
+
+          const updateEl = document.getElementById("lastUpdated");
+          if (updateEl) {
+            updateEl.textContent =
+              "Last updated: " + new Date().toLocaleTimeString();
+          }
         }
       },
       (error) => {
@@ -64,7 +74,7 @@ if (typeof USER_AUTHENTICATED !== "undefined" && USER_AUTHENTICATED) {
 // -----------------
 // Map Initialization
 // -----------------
-const map = L.map("map").setView([0, 0], 2); // World zoom
+const map = L.map("map").setView([0, 0], 2);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "© OpenStreetMap contributors",
 }).addTo(map);
@@ -82,7 +92,6 @@ socket.on("receive-location", (data) => {
 
   console.log("📍 Received location from:", name, { latitude, longitude });
 
-  // 1. Update Marker
   if (markers[id]) {
     markers[id].setLatLng([latitude, longitude]);
   } else {
@@ -90,15 +99,12 @@ socket.on("receive-location", (data) => {
       .addTo(map)
       .bindPopup(
         `<strong>User:</strong> ${name}<br/>
-     <strong>Lat:</strong> ${latitude.toFixed(5)}<br/>
-     <strong>Lng:</strong> ${longitude.toFixed(5)}`
+         <strong>Lat:</strong> ${latitude.toFixed(5)}<br/>
+         <strong>Lng:</strong> ${longitude.toFixed(5)}`
       )
       .openPopup();
-
-    socket.emit("send-location", { latitude, longitude, accuracy });
   }
 
-  // 2. Trail Update
   if (!paths[id]) paths[id] = [];
   paths[id].push([latitude, longitude]);
   if (paths[id].length > 50) paths[id].shift();
@@ -113,16 +119,15 @@ socket.on("receive-location", (data) => {
     }).addTo(map);
   }
 
-  // 3. Focus view on self
   if (id === socket.id) {
     map.setView([latitude, longitude], 16);
   }
 
-  map.invalidateSize(); // Fix potential resize issues
+  map.invalidateSize();
 });
 
 // -----------------
-// User + Location Count Updates (Optional UI elements)
+// UI Updates
 // -----------------
 socket.on("active-users", (count) => {
   const el = document.getElementById("activeUsers");
