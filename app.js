@@ -26,8 +26,8 @@ function ensureAuth(req, res, next) {
 // Connect MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.log("❌ MongoDB error:", err));
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.log("MongoDB error:", err));
 
 // Setup session
 const sessionMiddleware = session({
@@ -79,7 +79,7 @@ app.get("/dashboard", ensureAuth, (req, res) => {
 // Location history API (JSON)
 app.get("/api/location-history", ensureAuth, async (req, res) => {
   try {
-    const email = req.user.emails[0].value; // assuming Google profile
+    const email = req.user.emails[0].value;
     const data = await Location.find({ email })
       .sort({ timestamp: -1 })
       .limit(100);
@@ -110,13 +110,13 @@ io.on("connection", (socket) => {
   const user = session?.passport?.user;
 
   console.log(
-    "🧠 New socket connection. User:",
+    "New socket connection. User:",
     user?.displayName || "Unknown"
   );
 
   if (user) userMap.set(socket.id, user);
 
-  io.emit("active-users", activeUsers); // ✅ Emit on new connect
+  io.emit("active-users", activeUsers);
 
   socket.on("send-location", async (data) => {
     const user = userMap.get(socket.id);
@@ -142,6 +142,9 @@ io.on("connection", (socket) => {
       latitude: data.latitude,
       longitude: data.longitude,
     });
+
+    const total = await Location.countDocuments();
+    io.emit("location-count", total);
   });
 
   socket.on("disconnect", () => {
@@ -153,7 +156,7 @@ io.on("connection", (socket) => {
 
     activeUsers = Math.max(activeUsers - 1, 0);
     io.emit("active-users", activeUsers);
-    io.emit("user-disconnected", socket.id); // Let client clean up markers/trails
+    io.emit("user-disconnected", socket.id); 
   });
 });
 
@@ -161,5 +164,5 @@ io.on("connection", (socket) => {
 
 // Start server
 server.listen(PORT, () =>
-  console.log("🚀 Server running on http://localhost:3000")
+  console.log("Server running on http://localhost:3000")
 );

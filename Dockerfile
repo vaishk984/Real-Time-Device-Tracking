@@ -1,16 +1,14 @@
-# Use official Node image
 FROM node:18
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files and install deps
-COPY package*.json ./
-RUN npm install
+ENV NODE_ENV=production
 
-# Copy rest of the project
+COPY package*.json ./
+RUN npm ci
+
 COPY . .
 
-# Expose port and start app
 EXPOSE 3000
+
 CMD ["node", "app.js"]

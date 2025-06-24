@@ -19,7 +19,7 @@ if (typeof USER_AUTHENTICATED !== "undefined" && USER_AUTHENTICATED) {
 
         if (accuracy > 100) {
           console.warn(
-            "⚠️ Ignoring inaccurate position. Accuracy:",
+            "Ignoring inaccurate position. Accuracy:",
             accuracy,
             "m"
           );
@@ -55,7 +55,7 @@ if (typeof USER_AUTHENTICATED !== "undefined" && USER_AUTHENTICATED) {
         }
       },
       (error) => {
-        console.error("❌ Geolocation error:", error);
+        console.error("Geolocation error:", error);
         alert("Please allow location permission.");
       },
       {
@@ -71,9 +71,8 @@ if (typeof USER_AUTHENTICATED !== "undefined" && USER_AUTHENTICATED) {
   alert("Please login to start tracking.");
 }
 
-// -----------------
 // Map Initialization
-// -----------------
+
 const map = L.map("map").setView([0, 0], 2);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "© OpenStreetMap contributors",
@@ -84,13 +83,12 @@ const markers = {};
 const trails = {};
 const paths = {};
 
-// -----------------
 // Receive Location
-// -----------------
+
 socket.on("receive-location", (data) => {
   const { id, name, latitude, longitude } = data;
 
-  console.log("📍 Received location from:", name, { latitude, longitude });
+  console.log("Received location from:", name, { latitude, longitude });
 
   if (markers[id]) {
     markers[id].setLatLng([latitude, longitude]);
@@ -126,15 +124,14 @@ socket.on("receive-location", (data) => {
   map.invalidateSize();
 });
 
-// -----------------
 // UI Updates
-// -----------------
+
 socket.on("active-users", (count) => {
   const el = document.getElementById("activeUsers");
-  if (el) el.textContent = `🟢 Active users: ${count}`;
+  if (el) el.textContent = `Active users: ${count}`;
 });
 
 socket.on("location-count", (total) => {
   const el = document.getElementById("totalLocations");
-  if (el) el.textContent = `📍 Total updates: ${total}`;
+  if (el) el.textContent = `Total updates: ${total}`;
 });
